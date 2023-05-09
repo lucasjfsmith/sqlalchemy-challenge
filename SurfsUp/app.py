@@ -21,9 +21,6 @@ Base.prepare(engine)
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 
-# Create our session (link) from Python to the DB
-session = Session(engine)
-
 #################################################
 # Flask Setup
 #################################################
@@ -46,9 +43,13 @@ def home():
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
     # Query database to return date and prcp within the date range
     results = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= '2016-08-23').all()
-    
+    session.close()
+
     # Create an empty list to hold the results
     all_precip = []
 
@@ -67,8 +68,12 @@ def precipitation():
 
 @app.route("/api/v1.0/stations")
 def stations():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
     # Query the database for all station data
     stations = session.query(Station)
+    session.close()
 
     # Create an empty list to hold the results
     all_stations = []
@@ -91,12 +96,15 @@ def stations():
 
 @app.route("/api/v1.0/tobs")
 def tobs():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
 
     # Query the database for date and tobs data from the 'USC00519281' station within the date range
     station_temps = session.query(Measurement.date, Measurement.tobs).\
                             filter(Measurement.date >= '2016-08-23').\
                             filter(Measurement.station == 'USC00519281').\
                             all()
+    session.close()
     
     # Create an empty list to hold the results
     all_tobs = []
@@ -117,16 +125,17 @@ def tobs():
 @app.route("/api/v1.0/<start>")
 # @app.route("/api/v1.0/<start>/<end>")
 def date_range(start):
-    # Convert date string to date object
-    date_list = start.split("-")
-    start_date = dt.date(int(date_list[0]), int(date_list[1]), int(date_list[2]))
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
     # Query the database for min, max, and avg temps starting at the provided start date
     results = session.query(func.min(Measurement.tobs),
                             func.max(Measurement.tobs),
                             func.avg(Measurement.tobs)
                             ).\
-                            filter(Measurement.date >= start_date).\
+                            filter(Measurement.date >= start).\
                             all()[0]
+    session.close()
 
     temp_dict = {
         "min": results[0],
