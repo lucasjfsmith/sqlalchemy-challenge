@@ -123,24 +123,34 @@ def tobs():
     return jsonify(all_tobs)
 
 @app.route("/api/v1.0/<start>")
-# @app.route("/api/v1.0/<start>/<end>")
-def date_range(start):
+@app.route("/api/v1.0/<start>/<end>")
+def date_range(start, end=None):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     # Query the database for min, max, and avg temps starting at the provided start date
-    results = session.query(func.min(Measurement.tobs),
-                            func.max(Measurement.tobs),
-                            func.avg(Measurement.tobs)
-                            ).\
-                            filter(Measurement.date >= start).\
-                            all()[0]
+    if end == None:
+        results = session.query(func.min(Measurement.tobs),
+                        func.max(Measurement.tobs),
+                        func.avg(Measurement.tobs)
+                        ).\
+                        filter(func.date(Measurement.date) >= start).\
+                        all()[0]
+    else:
+        results = session.query(func.min(Measurement.tobs),
+                        func.max(Measurement.tobs),
+                        func.avg(Measurement.tobs)
+                        ).\
+                        filter(func.date(Measurement.date) >= start).\
+                        filter(func.date(Measurement.date) <= end).\
+                        all()[0]
+
     session.close()
 
     temp_dict = {
-        "min": results[0],
-        "max": results[1],
-        "avg": results[2]
+        "TMIN": results[0],
+        "TMAX": results[1],
+        "TAVG": results[2]
     }
 
     return jsonify(temp_dict)
